@@ -7,9 +7,12 @@
 #include <netdb.h>
 
 
-#define GOPHER_PORT 70
-#define CRLF "\r\n" /* 0x0D 0x0A*/
-#define TAB "\t" /* 0x09 */
+#define GOPHER_PORT (70)
+#define GOPHER_MAX_LINE (2048)
+#define GOPHER_CRLF "\r\n"         /* 0x0D 0x0A */
+#define GOPHER_TAB "\t"            /*      0x09 */
+#define GOPHER_END '.'             /*      0x2E */
+
 typedef unsigned short u32;
 
 typedef enum {
@@ -54,12 +57,14 @@ static Itype get_type(char t) {
     return G_ERR;
 }
 
-#define DISPLAY_LEN 70 /* 3.9: string should be kept under 70 chars in length */
-#define SELECT_LEN 255 /* Appendix: Selector string no longer than 255 chars */
-typedef struct {
+#define DISPLAY_LEN (70) /* 3.9: string should be kept under 70 chars in length */
+#define SELECT_LEN (255) /* Appendix: Selector string no longer than 255 chars */
+typedef struct _item_entry {
     Itype   item_type;
     char    item_display[DISPLAY_LEN];
     char    item_selector[SELECT_LEN];
     char    item_hostname[SELECT_LEN];
     u32     item_port;
+
+    char    item_buf[GOPHER_MAX_LINE]; /* Temporary for debugging */
 } item_entry;
