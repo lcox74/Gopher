@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gopher.h"
+#include "../gopher.h"
 
-#define CHUNK_SIZE (2048)
+#define CHUNK_SIZE (1024)
 
 int base_test();
 int process_buffer(char*, u16, item_entry*, u16*);
@@ -93,13 +93,13 @@ int sock_recv_all(int socket, char *buf, u32 *buf_size) {
 
 /* Active Server to Test */
 const char* test_host   = "gopher.floodgap.com";
-const char* test_select = "/gopher" GOPHER_CRLF;
+const char* test_select = "" GOPHER_CRLF;
 const u16   test_port   = GOPHER_PORT;
 
 int base_test() {
     char *buffer;
     int socket_fd, buffer_size = CHUNK_SIZE;
-    
+
     /* Create Connection */
     if ((socket_fd = create_connection(test_host, test_port)) < 0) {
         printf("Client couldn't make a connection\n");

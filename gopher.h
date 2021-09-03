@@ -6,7 +6,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-
 #define GOPHER_PORT (70)
 #define GOPHER_MAX_LINE (2048)
 #define GOPHER_MAX_ENTRIES (256)
