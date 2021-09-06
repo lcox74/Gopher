@@ -12,6 +12,20 @@ int add_entry(char*, u16, item_entry*, u16);
 /* Helper functions */
 int string_to_delm(const char*, char, u16);
 
+static void usage(int exitcode) {
+    fprintf(exitcode ? stderr : stdout,
+            "Usage: gopher-client [-vp] <url>\n\n"
+            "\n"
+            "  -p portnum        Set port number, default 70\n"
+            "  -v                Verbose responses\n"
+    );
+    exit(exitcode);
+}
+
+static void parseopt(int argc, char **argv) {
+    //getopt(argc, argv, /* FORMAT */ );
+} 
+
 int main (int argc, char* argv[]) {
     int err = 0;
 
@@ -126,7 +140,7 @@ int base_test() {
         process_buffer(buffer, buffer_size, entries, &entry_len);
 
         /* Write all entries to display */
-        draw_items(entries, entry_len);
+        draw_items_verbose(entries, entry_len);
     }
 
     /* Close Connection and Clean Buffer */

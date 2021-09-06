@@ -13,6 +13,19 @@
 #define GOPHER_TAB "\t"            /*      0x09 */
 #define GOPHER_END '.'             /*      0x2E */
 
+/* Item type character set */
+#define GOPHER_G_FILE           "📄"
+#define GOPHER_G_DIR            "📁"
+#define GOPHER_G_CCSO           "📓"
+#define GOPHER_G_DOS            "💻"
+#define GOPHER_G_SEARCH         "🔎"
+#define GOPHER_G_PHONE          "📞"
+#define GOPHER_G_BIN            "💿"
+#define GOPHER_G_REDUNDANT      "🗄"
+#define GOPHER_G_GIF            "📹"
+#define GOPHER_G_IMG            "📷"
+
+
 typedef unsigned char  u8;
 typedef unsigned short u16;
 typedef unsigned int   u32;
@@ -41,19 +54,19 @@ typedef enum {
 
 static Itype get_type(char t) {
     switch(t) {
-        case '0': return G_FILE;
-        case '1': return G_DIR;
-        case '2': return G_CCSO;
-        case '4': return G_BINHEX;
-        case '5': return G_DOS;
-        case '6': return G_UUENCODED;
-        case '7': return G_SEARCH;
-        case '8': return G_TELNET;
-        case '9': return G_BIN;
-        case '+': return G_REDUNDANT;
-        case 'T': return G_TELNET3270;
-        case 'g': return G_GIF;
-        case 'I': return G_IMG;
+        case '0': return G_FILE;        /* 📄 */
+        case '1': return G_DIR;         /* 📁 */
+        case '2': return G_CCSO;        /* 📓 */
+        case '4': return G_BINHEX;      /* 💿 */
+        case '5': return G_DOS;         /* 💻 */
+        case '6': return G_UUENCODED;   /* 🕸 */
+        case '7': return G_SEARCH;      /* 🔎 */
+        case '8': return G_TELNET;      /* 📞 */
+        case '9': return G_BIN;         /* 💿 */
+        case '+': return G_REDUNDANT;   /* 🗄 */
+        case 'T': return G_TELNET3270;  /* 📞 */
+        case 'g': return G_GIF;         /* 📹 */
+        case 'I': return G_IMG;         /* 📷 */
         case '.': return G_END;
     }
     return G_ERR;
@@ -88,7 +101,7 @@ void draw_hex(char *buffer, int size) {
 }
 
 /* Helper function to write item entries to terminal */
-void draw_items(item_entry *items, u16 length) {
+void draw_items_verbose(item_entry *items, u16 length) {
     printf("[");
     for (u16 x = 0; x < length; ++x) {
         if (x) printf(",\n");
