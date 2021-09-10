@@ -5,9 +5,12 @@
 
 #define CHUNK_SIZE (1024)
 
-int base_test();
+u16 send_gopher_request(item_entry*, const char*, const char*, const u16);
+int create_connection(const char *, u16);
+u16 select_request(int, const char*, item_entry*);
 int process_buffer(char*, u16, item_entry*, u16*);
 int add_entry(char*, u16, item_entry*, u16);
+
 
 /* Helper functions */
 int string_to_delm(const char*, char, u16);
@@ -26,18 +29,58 @@ static void parseopt(int argc, char **argv) {
     //getopt(argc, argv, /* FORMAT */ );
 } 
 
-int main (int argc, char* argv[]) {
-    int err = 0;
+/* Active Server to Test */
+const char* test_host   = "gopher.floodgap.com";
+const char* test_select = "" GOPHER_CRLF;
+const u16   test_port   = GOPHER_PORT;
 
-    if ((err = base_test())) {
-        printf("Client Failed (exit %d)\n", err);
+int main (int argc, char* argv[]) {
+    u16 item_num = 0;
+
+    item_entry entries[GOPHER_MAX_ENTRIES];
+    if ((item_num = send_gopher_request(entries, test_host, test_select, test_port)) < 0) {
+        printf("Client Failed (exit %d)\n", item_num);
         return 1;
     }
+
+    /* Write all entries to display */
+    draw_items_render(entries, item_num);
+
+    printf("===========================================\n");
+
+    item_entry entries2[GOPHER_MAX_ENTRIES];
+    if ((item_num = send_gopher_request(entries2, test_host, "/groundhog" GOPHER_CRLF, test_port)) < 0) {
+        printf("Client Failed (exit %d)\n", item_num);
+        return 1;
+    }
+    /* Write all entries to display */
+    draw_items_render(entries2, item_num);
 
     return 0;
 }
 
-int create_connection(const char *hostname, unsigned short port) {
+u16 send_gopher_request(item_entry* entries, const char* host, const char* select, const u16 port) {
+    int socket_fd;
+    u16 item_numbers = 0;
+
+    /* Create Connection */
+    if ((socket_fd = create_connection(host, port)) < 0) {
+        printf("Client couldn't make a connection\n");
+        return -1;
+    }
+
+    /* Send Select Request */
+    if ((item_numbers = select_request(socket_fd, select, entries)) < 0) {
+        close(socket_fd);
+        return -1;
+    }
+
+    /* Close Connection and Clean Buffer */
+    close(socket_fd);
+    return item_numbers;
+}
+
+int create_connection(const char *hostname, u16 port) {
     int fd;
     struct sockaddr_in addr;
     struct hostent *server_addr;
@@ -105,49 +148,27 @@ int sock_recv_all(int socket, char *buf, u32 *buf_size) {
     return 0;
 }
 
-/* Active Server to Test */
-const char* test_host   = "gopher.floodgap.com";
-const char* test_select = "" GOPHER_CRLF;
-const u16   test_port   = GOPHER_PORT;
-
-int base_test() {
-    char *buffer;
-    int socket_fd, buffer_size = CHUNK_SIZE;
-
-    /* Create Connection */
-    if ((socket_fd = create_connection(test_host, test_port)) < 0) {
-        printf("Client couldn't make a connection\n");
-        return 1;
-    }
+u16 select_request(int socket_fd, const char* select, item_entry* entries) {
+    int buffer_size = CHUNK_SIZE;
+    u16 entry_len = 0;
 
     /* Send Magic String (Selector) */
-    send(socket_fd, test_select, strlen(test_select), 0);
+    send(socket_fd, select, strlen(select), 0);
 
     /* Read response */
-    buffer = (char*) malloc(buffer_size);
+    char *buffer = (char*) malloc(buffer_size);
     
     if (sock_recv_all(socket_fd, buffer, &buffer_size)) {
         printf("Client failed to receive all data\n");
-        close(socket_fd);
-        return 2;
+        return -1;
     }
     
     /* Process item entries from buffer */
-    {
-        item_entry entries[GOPHER_MAX_ENTRIES];
-        u16 entry_len;
-        memset(entries, 0, GOPHER_MAX_ENTRIES * sizeof(item_entry));
-        process_buffer(buffer, buffer_size, entries, &entry_len);
+    memset(entries, 0, GOPHER_MAX_ENTRIES * sizeof(item_entry));
+    process_buffer(buffer, buffer_size, entries, &entry_len);
 
-        /* Write all entries to display */
-        draw_items_verbose(entries, entry_len);
-    }
-
-    /* Close Connection and Clean Buffer */
-    close(socket_fd);
     free(buffer);
-
-    return 0;
+    return entry_len;
 }
 
 int process_buffer(char* buf, u16 buf_size, item_entry* entries, u16 *entry_len) {

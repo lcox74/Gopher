@@ -100,6 +100,35 @@ void draw_hex(char *buffer, int size) {
     printf("\n\n");
 }
 
+
+/* Helper function to write a single item entry to terminal */
+void draw_item_row(item_entry item) {
+    switch(item.item_type) {
+        case G_FILE:        printf("📄 "); break;
+        case G_DIR:         printf("📁 "); break;
+        case G_CCSO:        printf("📓 "); break;
+        case G_BINHEX:      printf("💿 "); break;
+        case G_DOS:         printf("💻 "); break;
+        case G_UUENCODED:   printf("🕸 ");  break;
+        case G_SEARCH:      printf("🔎 "); break;
+        case G_TELNET:      printf("📞 "); break;
+        case G_BIN:         printf("💿 "); break;
+        case G_REDUNDANT:   printf("🗄 ");  break;
+        case G_TELNET3270:  printf("📞 "); break;
+        case G_GIF:         printf("📹 "); break;
+        case G_IMG:         printf("📷 "); break;
+    }
+
+    printf("%s\n", item.item_strings[ENTRY_DISPLAY]);
+}
+
+void draw_items_render(item_entry *items, u16 length) {
+    for (u16 x = 0; x < length; ++x) {
+        printf("%3d. ", x); /* Write ID */
+        draw_item_row(items[x]);
+    }
+}
+
 /* Helper function to write item entries to terminal */
 void draw_items_verbose(item_entry *items, u16 length) {
     printf("[");
