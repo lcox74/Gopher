@@ -5,7 +5,7 @@
 
 #define CHUNK_SIZE (1024)
 
-u16 send_gopher_request(item_entry*, const char*, const char*, const u16);
+u16 send_gopher_request(item_entry*, const gopher_config);
 int create_connection(const char *, u16);
 u16 select_request(int, const char*, item_entry*);
 int process_buffer(char*, u16, item_entry*, u16*);
@@ -15,18 +15,50 @@ int add_entry(char*, u16, item_entry*, u16);
 /* Helper functions */
 int string_to_delm(const char*, char, u16);
 
-static void usage(int exitcode) {
-    fprintf(exitcode ? stderr : stdout,
-            "Usage: gopher-client [-vp] <url>\n\n"
-            "\n"
-            "  -p portnum        Set port number, default 70\n"
-            "  -v                Verbose responses\n"
-    );
-    exit(exitcode);
+void usage(void) {
+    fprintf(stderr,"usage: gopher-client [-vf] [-p port] [-s selector] host\n");
+    exit(1);
 }
 
-static void parseopt(int argc, char **argv) {
-    //getopt(argc, argv, /* FORMAT */ );
+void parseopt(int argc, char **argv, gopher_config* config) {
+    config->gopher_mode = GOPHER_MODE_DEFAULT;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "vfp:s:")) != -1) {
+        switch (opt)
+        {
+        case 'v':
+            config->gopher_mode |= GOPHER_MODE_VERBOSE;
+            break;
+        case 'f':
+            config->gopher_mode |= GOPHER_MODE_FILE;
+            break;
+        case 'p':
+            config->gopher_mode |= GOPHER_MODE_PORT_SET;
+            config->gopher_port = atoi(optarg);
+            break;
+        case 's':
+            config->gopher_mode |= GOPHER_MODE_SELECT_SET;
+            strcpy(config->gopher_selector, optarg);
+            break;
+        default:
+            usage();
+            break;
+        }
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc <= 0 || argc > 1) usage();
+
+    /* Required */
+    strcpy(config->gopher_host, argv[0]);
+
+    /* Setting defaults if not set already */
+    if (!(config->gopher_mode & GOPHER_MODE_PORT_SET)) config->gopher_port = 70;
+    if (!(config->gopher_mode & GOPHER_MODE_SELECT_SET)) 
+        memset(config->gopher_selector, '\0', ENTRY_STR_LEN);    
 } 
 
 /* Active Server to Test */
@@ -35,42 +67,39 @@ const char* test_select = "" GOPHER_CRLF;
 const u16   test_port   = GOPHER_PORT;
 
 int main (int argc, char* argv[]) {
-    u16 item_num = 0;
 
-    item_entry entries[GOPHER_MAX_ENTRIES];
-    if ((item_num = send_gopher_request(entries, test_host, test_select, test_port)) < 0) {
-        printf("Client Failed (exit %d)\n", item_num);
-        return 1;
+    gopher_config config;
+    parseopt(argc, argv, &config);
+
+    if (config.gopher_mode & GOPHER_MODE_FILE) {
+        printf("FILE MODE\n");
+    } else {
+        u16 item_num = 0;
+        item_entry entries[GOPHER_MAX_ENTRIES];
+        if ((item_num = send_gopher_request(entries, config)) < 0) {
+            printf("Client Failed (exit %d)\n", item_num);
+            return 1;
+        }
+
+        /* Write all entries to display */
+        draw_items_render(entries, item_num);
     }
-
-    /* Write all entries to display */
-    draw_items_render(entries, item_num);
-
-    printf("===========================================\n");
-
-    item_entry entries2[GOPHER_MAX_ENTRIES];
-    if ((item_num = send_gopher_request(entries2, test_host, "/groundhog" GOPHER_CRLF, test_port)) < 0) {
-        printf("Client Failed (exit %d)\n", item_num);
-        return 1;
-    }
-    /* Write all entries to display */
-    draw_items_render(entries2, item_num);
 
     return 0;
 }
 
-u16 send_gopher_request(item_entry* entries, const char* host, const char* select, const u16 port) {
+u16 send_gopher_request(item_entry* entries, const gopher_config config) {
     int socket_fd;
     u16 item_numbers = 0;
 
     /* Create Connection */
-    if ((socket_fd = create_connection(host, port)) < 0) {
+    if ((socket_fd = create_connection(config.gopher_host, config.gopher_port)) < 0) {
         printf("Client couldn't make a connection\n");
         return -1;
     }
 
     /* Send Select Request */
-    if ((item_numbers = select_request(socket_fd, select, entries)) < 0) {
+    if ((item_numbers = select_request(socket_fd, config.gopher_selector, entries)) < 0) {
         close(socket_fd);
         return -1;
     }
@@ -152,8 +181,11 @@ u16 select_request(int socket_fd, const char* select, item_entry* entries) {
     int buffer_size = CHUNK_SIZE;
     u16 entry_len = 0;
 
+    char end_str[2] = GOPHER_CRLF;
+
     /* Send Magic String (Selector) */
     send(socket_fd, select, strlen(select), 0);
+    send(socket_fd, end_str, 2, 0);
 
     /* Read response */
     char *buffer = (char*) malloc(buffer_size);

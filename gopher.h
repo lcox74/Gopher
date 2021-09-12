@@ -86,6 +86,21 @@ typedef struct _item_entry {
 } item_entry;
 
 
+#define GOPHER_MODE_DEFAULT     0x01
+#define GOPHER_MODE_VERBOSE     0x02
+#define GOPHER_MODE_FILE        0x04
+#define GOPHER_MODE_PORT_SET    0x08
+#define GOPHER_MODE_SELECT_SET  0x10
+
+typedef struct _gopher_config {
+    u8 gopher_mode;
+
+    char gopher_host[ENTRY_STR_LEN];
+    char gopher_selector[ENTRY_STR_LEN];
+    u16 gopher_port;
+} gopher_config;
+
+
 /* Helper function to get raw hexdump of buffer */
 void draw_hex(char *buffer, int size) {
     const unsigned char limit = 8;
